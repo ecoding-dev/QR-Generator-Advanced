@@ -194,7 +194,6 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](L
 
 - **Issues**: [GitHub Issues](https://github.com/ecoding-dev/QR-Generator-Advanced/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ecoding-dev/QR-Generator-Advanced/discussions)
-- **Email**: support@qr-generator-advanced.com
 
 ## 🗺️ Hoja de Ruta
 
