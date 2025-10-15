@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"></html>
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <title>QR Visual Analyzer</title>
@@ -138,24 +138,6 @@
     summary{cursor:pointer; font-weight:700; color:var(--accent-ink)}
     .center{display:flex; align-items:center; justify-content:center}
     .err{color:#b91c1c; background:#fee2e2; border:1px solid #fecaca; padding:10px 12px; border-radius:10px}
-
-    /* Tooltips para labels */
-    .tip{
-      display:inline-flex; align-items:center; justify-content:center;
-      width:18px; height:18px; margin-left:6px; border-radius:50%;
-      background:var(--chip); border:1px solid var(--border); color:var(--ink);
-      font-size:11px; font-weight:700; cursor:help; position:relative; outline:none;
-    }
-    .tip:focus{box-shadow:0 0 0 3px var(--ring)}
-    .tip::after{
-      content:attr(data-tip);
-      position:absolute; left:50%; top:calc(100% + 8px); transform:translateX(-50%) translateY(4px);
-      min-width:200px; max-width:280px; padding:8px 10px; border-radius:10px;
-      background:#111; color:#fff; font-size:12px; line-height:1.35; white-space:normal;
-      box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; pointer-events:none; transition:.16s ease;
-    }
-    .tip:hover::after, .tip:focus::after{opacity:1; transform:translateX(-50%) translateY(0)}
-
   </style>
 </head>
 <body>
@@ -164,7 +146,7 @@
       <div class="logo">QR</div>
       <div>
         <h1 style="margin:0;font-size:22px">QR Visual Analyzer</h1>
-        <div class="subtitle">QR code generator with advanced configuration</div>
+        <div class="subtitle">Modern QR code generator with advanced configuration</div>
       </div>
     </div>
   </header>
@@ -180,19 +162,12 @@
             <input type="text" name="text" value="{{text|e}}" placeholder="Ingresa el payload EMVCo / string" />
           </div>
           <div>
-            <label>Error Correction
-              <span class="tip" tabindex="0" data-tip="Nivel de corrección Reed–Solomon: L=7%, M=15%, Q=25%, H=30%. Más alto = más robusto, menos capacidad.">?</span>
-            </label>
+            <label>Error Correction</label>
             <select name="ecc">
               {% for v in ['L','M','Q','H'] %}
-              <option value="{{v}}" {% if ecc==v %}selected{% endif %}>
-                {% if v=='L' %}L - 7% recovery
-                {% elif v=='M' %}M - 15% recovery
-                {% elif v=='Q' %}Q - 25% recovery
-                {% elif v=='H' %}H - 30% recovery
-                {% else %}{{v}}
-                {% endif %}
-              </option>
+                <option value="{{v}}" {% if ecc==v %}selected{% endif %}>
+                  {{ 'M - 15% recovery (Yape)' if v=='M' else v }}
+                </option>
               {% endfor %}
             </select>
           </div>
@@ -200,9 +175,7 @@
 
         <div class="row">
           <div>
-            <label>Version
-  <span class="tip" tabindex="0" data-tip="Auto: el encoder elige la versión mínima en que el payload cabe con los demás parámetros. v1=21×21 y cada versión suma 4 módulos por lado.">?</span>
-</label>
+            <label>Version</label>
             <select name="version">
               <option value="auto" {% if version=='auto' %}selected{% endif %}>Auto (minimum)</option>
               {% for v in range(1,41) %}
@@ -212,18 +185,16 @@
           </div>
           <div class="center">
             <button class="btn" type="submit" style="width:100%; justify-content:center">
-                Generate QR Code
+              Generate QR Code
             </button>
           </div>
         </div>
 
         <details {% if not qr %}open{% endif %} style="margin-top:10px">
-            <summary>⚙️ Advanced Options</summary>
+          <summary>⚙️ Advanced Settings</summary>
           <div style="margin-top:12px" class="row-4">
             <div>
-              <label>Mode
-  <span class="tip" tabindex="0" data-tip="byte: cualquier texto/UTF-8 (recomendado). alphanumeric/numeric son más compactos pero restringen el alfabeto. kanji usa Shift-JIS.">?</span>
-</label>
+              <label>Mode</label>
               <select name="mode">
                 {% for v in ['byte','alphanumeric','numeric','kanji'] %}
                   <option value="{{v}}" {% if mode==v %}selected{% endif %}>
@@ -231,20 +202,17 @@
                   </option>
                 {% endfor %}
               </select>
+              <div class="hint">Para clonar Yape: <b>byte</b></div>
             </div>
 
             <div>
-              <label>Encoding
-  <span class="tip" tabindex="0" data-tip="Charset usado en mode=byte. Ej: utf-8, iso-8859-1. Con ECI=True se declara explícitamente; con ECI=False se asume ISO-8859-1.">?</span>
-</label>
+              <label>Encoding</label>
               <input type="text" name="encoding" value="{{encoding|e}}" />
               <div class="hint">Ej: utf-8, iso-8859-1</div>
             </div>
 
             <div>
-              <label>ECI
-  <span class="tip" tabindex="0" data-tip="Extended Channel Interpretation. True: añade encabezado con el encoding (p.ej. UTF-8). False: implícitamente ISO-8859-1.">?</span>
-</label>
+              <label>ECI</label>
               <select name="eci">
                 <option value="true"  {% if eci %}selected{% endif %}>True (UTF-8)</option>
                 <option value="false" {% if not eci %}selected{% endif %}>False</option>
@@ -252,21 +220,18 @@
             </div>
 
             <div>
-              <label>Mask Pattern
-  <span class="tip" tabindex="0" data-tip="Patrón 0..7 que alterna módulos para mejorar legibilidad. Auto: se calcula la menor penalización visual según ISO/IEC.">?</span>
-</label>
+              <label>Mask Pattern</label>
               <select name="mask">
                 <option value="auto" {% if mask=='auto' %}selected{% endif %}>auto</option>
                 {% for m in range(8) %}
                   <option value="{{m}}" {% if mask|int==m %}selected{% endif %}>{{m}}</option>
                 {% endfor %}
               </select>
+              <div class="hint">Yape: 2</div>
             </div>
 
             <div>
-              <label>Boost Error
-  <span class="tip" tabindex="0" data-tip="Si cabe, incrementa el nivel de ECC automáticamente (más robusto, menos capacidad).">?</span>
-</label>
+              <label>Boost Error</label>
               <select name="boost_error">
                 <option value="false" {% if not boost_error %}selected{% endif %}>False</option>
                 <option value="true"  {% if boost_error %}selected{% endif %}>True</option>
@@ -274,9 +239,7 @@
             </div>
 
             <div>
-              <label>Micro QR
-  <span class="tip" tabindex="0" data-tip="Formato Micro (M1..M4), más chico y con menos capacidad. En la mayoría de casos usa QR estándar (False).">?</span>
-</label>
+              <label>Micro QR</label>
               <select name="micro">
                 <option value="false" {% if not micro %}selected{% endif %}>False</option>
                 <option value="true"  {% if micro %}selected{% endif %}>True</option>
@@ -284,95 +247,26 @@
             </div>
 
             <div>
-              <label>Quiet Zone
-  <span class="tip" tabindex="0" data-tip="Borde claro (en módulos). ISO recomienda ≥ 4.">?</span>
-</label>
+              <label>Quiet Zone</label>
               <input type="number" name="border" min="0" max="20" step="1" value="{{border}}" />
+              <div class="hint">Módulos (Yape: 4)</div>
             </div>
           </div>
         </details>
       </form>
 
       <section class="card">
-  <h3>QR Code Structure</h3>
-  <div class="legend-list">
-    <div class="muted"><span class="sw" style="background:rgb(128,0,128)"></span> Finder patterns (3 corners)</div>
-    <div class="muted"><span class="sw" style="background:rgb(230,230,230)"></span> Separator (visual)</div>
-    <div class="muted"><span class="sw" style="background:rgb(255,165,0)"></span> Timing patterns (row 6, column 6)</div>
-    <div class="muted"><span class="sw" style="background:rgb(0,128,128)"></span> Alignment patterns</div>
-    <div class="muted"><span class="sw" style="background:rgb(255,0,0)"></span> Format bits</div>
-    <div class="muted"><span class="sw" style="background:rgb(180,0,0)"></span> Version bits (v ≥ 7)</div>
-    <!-- NUEVO: separar datos y ECC -->
-    <div class="muted"><span class="sw" style="background:rgb(35,35,35)"></span> Data (payload)</div>
-    <div class="muted"><span class="sw" style="background:rgb(20,90,160)"></span> ECC (Reed–Solomon)</div>
-  </div>
-  <div class="hint" style="margin-top:8px">
-    Nota: si el nivel/versión no está en la tabla de ECC actual, el render colorea toda el área no-funcional como “Data” para evitar confusión.
-  </div>
-</section>
-<section class="card">
-  <details>
-    <summary>📘 Documentación de parámetros</summary>
-    <div class="hint" style="margin:10px 0 6px">Resumen de valores, rangos y efectos.</div>
-    <ul style="font-size:13px; line-height:1.55; color:var(--ink); margin:0; padding-left:18px">
-      <li><strong>ECC</strong>:
-        <ul>
-          <li>L = 7% de recuperación de datos</li>
-          <li>M = 15% (Yape)</li>
-          <li>Q = 25%</li>
-          <li>H = 30% (más robusto, menos capacidad)</li>
-        </ul>
-      </li>
-      <li><strong>Versión</strong>:
-        <ul>
-          <li><code>Auto</code> → versión mínima donde el payload cabe con los demás parámetros</li>
-          <li>1…40 → fija una versión; cada +1 suma 4 módulos por lado (v1=21×21, v40=177×177)</li>
-        </ul>
-      </li>
-      <li><strong>Modo</strong>:
-        <ul>
-          <li><code>byte</code> → cualquier dato binario/UTF-8 (recomendado; usado por Yape)</li>
-          <li><code>alphanumeric</code> → A–Z 0–9 y pocos símbolos (más compacto)</li>
-          <li><code>numeric</code> → solo dígitos (máxima compactación)</li>
-          <li><code>kanji</code> → caracteres Shift-JIS</li>
-        </ul>
-      </li>
-      <li><strong>Encoding</strong>:
-        <ul><li>Charset cuando <code>mode=byte</code> (ej.: utf-8, iso-8859-1)</li></ul>
-      </li>
-      <li><strong>ECI</strong>:
-        <ul>
-          <li><code>True</code> → inserta ECI con el charset (ej.: UTF-8)</li>
-          <li><code>False</code> → receptor asume ISO-8859-1</li>
-        </ul>
-      </li>
-      <li><strong>Mask</strong>:
-        <ul>
-          <li><code>Auto</code> → calcula penalización N1..N4 (ISO/IEC) y elige la menor</li>
-          <li><code>0…7</code> → patrón fijo (Yape: 2)</li>
-        </ul>
-      </li>
-      <li><strong>Boost error</strong>:
-        <ul>
-          <li><code>False</code> → respeta el ECC elegido</li>
-          <li><code>True</code> → si cabe, sube el ECC para mayor robustez</li>
-        </ul>
-      </li>
-      <li><strong>Micro QR</strong>:
-        <ul>
-          <li><code>False</code> → QR estándar (v1–40)</li>
-          <li><code>True</code> → Micro QR (M1..M4), menor capacidad</li>
-        </ul>
-      </li>
-      <li><strong>Quiet zone</strong>:
-        <ul>
-          <li>Borde claro en módulos; recomendado: 4+</li>
-        </ul>
-      </li>
-    </ul>
-  </details>
-</section>
-
+        <h3>QR Code Structure</h3>
+        <div class="legend-list">
+          <div class="muted"><span class="sw" style="background:rgb(128,0,128)"></span> Finder patterns (3 corners)</div>
+          <div class="muted"><span class="sw" style="background:rgb(230,230,230)"></span> Separator (visual)</div>
+          <div class="muted"><span class="sw" style="background:rgb(255,165,0)"></span> Timing patterns (row 6, column 6)</div>
+          <div class="muted"><span class="sw" style="background:rgb(0,128,128)"></span> Alignment patterns</div>
+          <div class="muted"><span class="sw" style="background:rgb(255,0,0)"></span> Format bits</div>
+          <div class="muted"><span class="sw" style="background:rgb(180,0,0)"></span> Version bits (v ≥ 7)</div>
+          <div class="muted"><span class="sw" style="background:rgb(35,35,35)"></span> Data area (data + ECC)</div>
+        </div>
+      </section>
     </section>
 
     <!-- Columna derecha: preview y descargas -->

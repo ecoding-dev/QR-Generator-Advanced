@@ -1,0 +1,248 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QR Visual Analyzer — Configurable</title>
+  <style>
+    body{font-family:Inter, Arial, sans-serif; padding:18px; background:#fff; color:#222}
+    .row{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end}
+    .field{display:flex; flex-direction:column; font-size:14px}
+    input[type="text"], select, input[type="number"]{padding:6px 8px; font-family:monospace; border:1px solid #ccc; border-radius:6px}
+    label{font-weight:600; margin-bottom:4px}
+    button{padding:10px 16px; border-radius:8px; border:1px solid #333; background:#111; color:#fff; cursor:pointer}
+    button:hover{opacity:.9}
+    .card{margin-top:18px; border:1px solid #ddd; border-radius:10px; padding:14px}
+    img{display:block; margin:8px 0; border:1px solid #ccc}
+    .metrics{font-size:13px; color:#333; line-height:1.4}
+    .legend{margin-top:18px}
+    .legend div{margin:6px 0}
+    .sw{display:inline-block; width:18px; height:12px; border:1px solid #aaa; margin-right:8px}
+    .error{color:#b00; font-weight:700}
+    .hint{font-size:12px; color:#666}
+    code{background:#f6f6f6; padding:1px 4px; border-radius:4px}
+  </style>
+</head>
+<body>
+  <h1>QR Visual Analyzer — Configurable</h1>
+
+  <form method="post">
+    <div class="row">
+      <div class="field" style="flex:1 1 100%">
+        <label>Texto (raw)</label>
+        <input type="text" name="text" value="{{text|e}}" placeholder="Ingresa el payload EMVCo / string">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>ECC</label>
+        <select name="ecc">
+          {% for v in ['L','M','Q','H'] %}
+            <option value="{{v}}" {% if ecc==v %}selected{% endif %}>{{v}}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Versión</label>
+        <select name="version">
+          <option value="auto" {% if version=='auto' %}selected{% endif %}>auto (mínima)</option>
+          {% for v in range(1,41) %}
+            <option value="{{v}}" {% if version|int==v %}selected{% endif %}>v{{v}}</option>
+          {% endfor %}
+        </select>
+        <div class="hint">Si eliges "auto", segno elige la mínima quepa con los demás parámetros.</div>
+      </div>
+
+      <div class="field">
+        <label>Modo</label>
+        <select name="mode">
+          {% for v in ['byte','alphanumeric','numeric','kanji'] %}
+            <option value="{{v}}" {% if mode==v %}selected{% endif %}>{{v}}</option>
+          {% endfor %}
+        </select>
+        <div class="hint">Para clonar Yape: <strong>byte</strong></div>
+      </div>
+
+      <div class="field" style="min-width:200px">
+        <label>Encoding</label>
+        <input type="text" name="encoding" value="{{encoding|e}}">
+        <div class="hint">Ej: utf-8, iso-8859-1</div>
+      </div>
+
+      <div class="field">
+        <label>ECI</label>
+        <select name="eci">
+          <option value="true" {% if eci %}selected{% endif %}>True</option>
+          <option value="false" {% if not eci %}selected{% endif %}>False</option>
+        </select>
+        <div class="hint">Yape: True (ECI UTF-8)</div>
+      </div>
+
+      <div class="field">
+        <label>Mask</label>
+        <select name="mask">
+          <option value="auto" {% if mask=='auto' %}selected{% endif %}>auto</option>
+          {% for m in range(8) %}
+            <option value="{{m}}" {% if mask|int==m %}selected{% endif %}>{{m}}</option>
+          {% endfor %}
+        </select>
+        <div class="hint">Yape: 2</div>
+      </div>
+
+      <div class="field">
+        <label>boost_error</label>
+        <select name="boost_error">
+          <option value="false" {% if not boost_error %}selected{% endif %}>False</option>
+          <option value="true" {% if boost_error %}selected{% endif %}>True</option>
+        </select>
+        <div class="hint">Para clonar: False</div>
+      </div>
+
+      <div class="field">
+        <label>micro</label>
+        <select name="micro">
+          <option value="false" {% if not micro %}selected{% endif %}>False</option>
+          <option value="true" {% if micro %}selected{% endif %}>True</option>
+        </select>
+        <div class="hint">Para clonar: False</div>
+      </div>
+
+      <div class="field">
+        <label>Quiet zone (módulos)</label>
+        <input type="number" name="border" min="0" max="20" step="1" value="{{border}}">
+        <div class="hint">Yape: 4</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button type="submit">Generar</button>
+    </div>
+  </form>
+
+  {% if error %}
+    <p class="error">{{error}}</p>
+  {% endif %}
+
+  {% if qr %}
+    <div class="card">
+      <strong>v{{qr.version}}</strong> — {{qr.size}}×{{qr.size}} px (mask={{qr.mask}})<br>
+      <em>Params:</em>
+      ECC=<strong>{{qr.ecc}}</strong>,
+      mode=<strong>{{qr.mode}}</strong>,
+      encoding=<strong>{{qr.encoding}}</strong>,
+      ECI=<strong>{{'True' if qr.eci else 'False'}}</strong>,
+      boost_error=<strong>{{'True' if qr.boost_error else 'False'}}</strong>,
+      micro=<strong>{{'True' if qr.micro else 'False'}}</strong>,
+      border=<strong>{{qr.border}}</strong>
+      <a href="data:image/png;base64,{{qr.img_b64}}" target="_blank">
+        <img src="data:image/png;base64,{{qr.img_b64}}" width="300" alt="QR v{{qr.version}}">
+      </a>
+      <div class="metrics">
+        Dark modules: {{qr.dark_modules}} / {{qr.modules}}<br>
+        Functional modules: {{qr.functional_modules}}<br>
+        Data-area modules (estimado): {{qr.data_modules}}<br>
+        <hr>
+        <strong>Sugerencia de máscara (menor penalización):</strong>
+        mask=<strong>{{qr.best_mask}}</strong> (score={{qr.best_score}})
+        <div class="hint">Scores por máscara: {{qr.mask_scores_text}}</div>
+
+          <hr>
+          <strong>Descargar (B/N):</strong>
+          <div class="row" style="gap:8px; margin-top:6px">
+            {% set qs = ('?text=' ~ text|urlencode ~ '&ecc=' ~ ecc ~ '&version=' ~ version ~ '&mode=' ~ mode ~
+                        '&encoding=' ~ encoding|urlencode ~ '&eci=' ~ ('true' if eci else 'false') ~
+                        '&mask=' ~ mask ~ '&boost_error=' ~ ('true' if boost_error else 'false') ~
+                        '&micro=' ~ ('true' if micro else 'false') ~ '&border=' ~ border) %}
+            <a href="{{ url_for('export_png_bw') ~ qs }}" class="btn">PNG</a>
+            <a href="{{ url_for('export_jpg_bw') ~ qs }}" class="btn">JPG (alta)</a>
+            <a href="{{ url_for('export_svg_separate') ~ qs }}" class="btn">SVG (módulos separados)</a>
+            <a href="{{ url_for('export_svg_colored') ~ qs }}" class="btn">SVG (coloreado por zonas)</a>
+          </div>
+          <div class="hint">Los archivos se generan con los mismos parámetros del preview (versión, ECC, mask, border, etc.).</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <h3>Leyenda</h3>
+      <div><span class="sw" style="background:rgb(128,0,128)"></span> Finder pattern (3 esquinas)</div>
+      <div><span class="sw" style="background:rgb(230,230,230);border:1px solid #ccc"></span> Separator (visual)</div>
+      <div><span class="sw" style="background:rgb(255,165,0)"></span> Timing pattern (fila 6 y columna 6)</div>
+      <div><span class="sw" style="background:rgb(0,128,128)"></span> Alignment patterns</div>
+      <div><span class="sw" style="background:rgb(255,0,0)"></span> Format bits</div>
+      <div><span class="sw" style="background:rgb(180,0,0)"></span> Version bits (v ≥ 7)</div>
+      <div><span class="sw" style="background:rgb(35,35,35)"></span> Data area (datos + ECC)</div>
+    </div>
+
+    <p class="hint">
+      Nota: separar exactamente datos vs. ECC por módulo implicaría mapear codewords a módulos; aquí marcamos zonas funcionales y tratamos lo demás como "data area".
+    </p>
+    
+  {% endif %}
+
+  <div class="legend" style="margin-top:32px">
+      <h3>Documentación de parámetros</h3>
+      <ul style="font-size:13px; line-height:1.5; color:#333">
+        <li><strong>ECC</strong> (Error Correction Code):
+          <ul>
+            <li>L = 7% de recuperación de datos</li>
+            <li>M = 15% (Yape usa este)</li>
+            <li>Q = 25%</li>
+            <li>H = 30% (más robusto, pero menos capacidad)</li>
+          </ul>
+        </li>
+        <li><strong>Versión</strong>:
+          <ul>
+            <li><code>auto</code> → segno elige la versión mínima en la que el texto cabe con los parámetros actuales.</li>
+            <li>1…40 → fuerza una versión fija. Cada incremento agrega 4 módulos por lado (v1=21×21, v40=177×177).</li>
+          </ul>
+        </li>
+        <li><strong>Modo</strong>:
+          <ul>
+            <li><code>byte</code> → codifica byte a byte (soporta cualquier texto/UTF-8). Recomendado y usado por Yape.</li>
+            <li><code>alphanumeric</code> → solo A–Z 0–9 y unos símbolos, más compacto.</li>
+            <li><code>numeric</code> → solo dígitos, aún más compacto.</li>
+            <li><code>kanji</code> → caracteres Shift-JIS japoneses.</li>
+          </ul>
+        </li>
+        <li><strong>Encoding</strong>:
+          <ul>
+            <li>Charset usado en <code>mode=byte</code>. Ejemplos: <code>utf-8</code>, <code>iso-8859-1</code>.</li>
+          </ul>
+        </li>
+        <li><strong>ECI</strong> (Extended Channel Interpretation):
+          <ul>
+            <li><code>True</code> → añade un encabezado que indica la codificación usada (ej. UTF-8).</li>
+            <li><code>False</code> → se asume implícitamente ISO-8859-1.</li>
+            <li>Yape usa: <strong>True + UTF-8</strong>.</li>
+          </ul>
+        </li>
+        <li><strong>Mask</strong>:
+          <ul>
+            <li><code>auto</code> → el encoder prueba 8 patrones y escoge el de menor penalización.</li>
+            <li>0…7 → fuerza máscara fija (Yape usa 2).</li>
+          </ul>
+        </li>
+        <li><strong>boost_error</strong>:
+          <ul>
+            <li><code>False</code> → usa el ECC elegido sin subirlo automáticamente.</li>
+            <li><code>True</code> → si cabe, sube a un ECC mayor (menos capacidad, más robustez).</li>
+          </ul>
+        </li>
+        <li><strong>micro</strong>:
+          <ul>
+            <li><code>False</code> → QR estándar (v1–40).</li>
+            <li><code>True</code> → Micro QR (más chico, menos capacidades).</li>
+            <li>Yape usa QR estándar → False.</li>
+          </ul>
+        </li>
+        <li><strong>Quiet zone (módulos)</strong>:
+          <ul>
+            <li>Borde blanco alrededor del símbolo, en módulos.</li>
+            <li>Valor típico: 4 (mínimo recomendado en ISO/IEC).</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+</body>
+</html>
