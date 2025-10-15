@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>QR Generator Advanced - Advanced QR Code Generator with Analysis</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Advanced QR code generator with detailed analysis, zone visualization, and multiple export formats. Originally developed for Yape QR regeneration." />
+  <meta name="keywords" content="QR code, generator, advanced, analysis, Yape, EMVCo, visualization, export" />
+  <meta name="author" content="QR Generator Advanced Team" />
+  <meta name="robots" content="index, follow" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="QR Generator Advanced" />
+  <meta property="og:description" content="Advanced QR code generator with detailed analysis and visualization" />
+  <meta property="og:url" content="https://github.com/ecoding-dev/QR-Generator-Advanced" />
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="QR Generator Advanced" />
+  <meta property="twitter:description" content="Advanced QR code generator with detailed analysis and visualization" />
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+  <style>
+    :root{
+      --bg:#f7faf9;
+      --card:#ffffff;
+      --ink:#0f172a;
+      --sub:#475569;
+      --muted:#94a3b8;
+      --accent:#0ea5e9;
+      --accent-ink:#0b6da0;
+      --ring:#bae6fd;
+      --ok:#16a34a;
+      --border:#e5e7eb;
+      --chip:#eef2f7;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji';
+      line-height:1.35;
+    }
+    header{
+      padding:24px 20px 8px;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    .title{
+      display:flex; gap:12px; align-items:center;
+    }
+    .logo{
+      width:36px; height:36px; display:grid; place-items:center;
+      border-radius:10px; background:var(--ink); color:#fff; font-weight:700;
+      box-shadow:0 2px 0 rgba(15,23,42,.15);
+    }
+    .subtitle{color:var(--sub); font-size:14px}
+
+    .container{
+      max-width:1100px; margin:16px auto 40px; padding:0 20px;
+      display:grid; gap:16px;
+      grid-template-columns: 1.1fr .9fr; /* izquierda controles, derecha preview */
+    }
+    @media (max-width:980px){
+      .container{grid-template-columns:1fr}
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:16px;
+      box-shadow:0 2px 0 rgba(15,23,42,.03);
+    }
+    h2{margin:.1rem 0 10px; font-size:18px}
+    h3{margin:.6rem 0 10px; font-size:16px}
+    .row{display:grid; gap:12px; grid-template-columns:1fr 1fr}
+    .row-3{display:grid; gap:12px; grid-template-columns:repeat(3,1fr)}
+    .row-4{display:grid; gap:12px; grid-template-columns:repeat(4,1fr)}
+    @media (max-width:720px){
+      .row,.row-3,.row-4{grid-template-columns:1fr}
+    }
+
+    label{font-size:12px; font-weight:600; color:var(--sub); margin-bottom:6px}
+    input[type="text"], select, input[type="number"]{
+      width:100%; border:1px solid var(--border); background:#fff; color:var(--ink);
+      padding:10px 12px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      outline:none; box-shadow:0 0 0 0px var(--ring);
+    }
+    input[type="text"]:focus, select:focus, input[type="number"]:focus{
+      border-color:var(--accent); box-shadow:0 0 0 4px var(--ring);
+    }
+
+    .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--ink); background:var(--ink); color:#fff;
+      padding:10px 14px; border-radius:10px; cursor:pointer; text-decoration:none;
+    }
+    .btn:hover{opacity:.92}
+    .btn.secondary{
+      background:#fff; color:var(--ink); border-color:var(--border);
+    }
+    .btn.secondary:hover{border-color:var(--ink)}
+    .btn:disabled,.btn.disabled{opacity:.55; pointer-events:none}
+
+    .block-title{
+      display:flex; align-items:center; gap:8px; margin-bottom:10px;
+      font-weight:700
+    }
+    .hint{color:var(--muted); font-size:12px}
+
+    .stack{display:flex; flex-direction:column; gap:12px}
+
+    .preview-wrap{
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(180deg,#0b1224,#0f1b2f);
+      border-radius:14px; padding:14px; border:1px solid var(--border);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    .preview-inner{
+      background:#111827; padding:14px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .qr-img{
+      display:block; width:300px; height:auto; border-radius:10px;
+      border:1px solid rgba(255,255,255,.2); background:#0f172a;
+    }
+
+    .chips{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 8px}
+    .chip{
+      display:inline-flex; align-items:center; gap:6px; padding:6px 10px;
+      border-radius:999px; background:var(--chip); color:var(--ink);
+      font-size:12px; border:1px solid var(--border);
+    }
+    .metrics{display:grid; gap:10px; grid-template-columns:1fr 1fr}
+    .metric{
+      background:var(--chip); border:1px solid var(--border); border-radius:10px;
+      padding:10px; font-size:13px
+    }
+    .metric b{display:block; font-size:12px; color:var(--sub); font-weight:700}
+
+    .downloads{display:flex; gap:10px; flex-wrap:wrap}
+    .dl{padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:#fff;
+        display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:var(--ink)}
+    .dl:hover{border-color:var(--ink)}
+
+    .legend-list{display:grid; gap:8px; grid-template-columns:1fr 1fr}
+    @media (max-width:720px){.legend-list{grid-template-columns:1fr}}
+    .sw{display:inline-block; width:16px; height:12px; border-radius:4px; margin-right:8px; border:1px solid var(--border)}
+    .muted{color:var(--sub)}
+    details{border:1px dashed var(--border); border-radius:12px; padding:10px 12px; background:#f9fbfc}
+    summary{cursor:pointer; font-weight:700; color:var(--accent-ink)}
+    .center{display:flex; align-items:center; justify-content:center}
+    .err{color:#b91c1c; background:#fee2e2; border:1px solid #fecaca; padding:10px 12px; border-radius:10px}
+
+    /* Tooltips para labels */
+    .tip{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:18px; height:18px; margin-left:6px; border-radius:50%;
+      background:var(--chip); border:1px solid var(--border); color:var(--ink);
+      font-size:11px; font-weight:700; cursor:help; position:relative; outline:none;
+    }
+    .tip:focus{box-shadow:0 0 0 3px var(--ring)}
+    .tip::after{
+      content:attr(data-tip);
+      position:absolute; left:50%; top:calc(100% + 8px); transform:translateX(-50%) translateY(4px);
+      min-width:200px; max-width:280px; padding:8px 10px; border-radius:10px;
+      background:#111; color:#fff; font-size:12px; line-height:1.35; white-space:normal;
+      box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; pointer-events:none; transition:.16s ease;
+    }
+    .tip:hover::after, .tip:focus::after{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <div class="logo">QR</div>
+      <div>
+        <h1 style="margin:0;font-size:22px">QR Generator Advanced</h1>
+        <div class="subtitle">Advanced QR code generator with detailed analysis and visualization</div>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <a href="https://github.com/ecoding-dev/QR-Generator-Advanced" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:6px;color:var(--accent);text-decoration:none;font-size:14px;font-weight:500">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+        </svg>
+        View on GitHub
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Columna izquierda: formulario -->
+    <section class="stack">
+      <form method="post" class="card">
+        <div class="block-title">⚡ Quick Generate</div>
+        <div class="row">
+          <div>
+            <label>Text or URL</label>
+            <input type="text" name="text" value="{{text|e}}" placeholder="Ingresa el payload EMVCo / string" 
+                   aria-label="Texto o datos para codificar en el QR" />
+          </div>
+          <div>
+            <label>Error Correction
+              <span class="tip" tabindex="0" data-tip="Nivel de corrección Reed–Solomon: L=7%, M=15%, Q=25%, H=30%. Más alto = más robusto, menos capacidad.">?</span>
+            </label>
+            <select name="ecc" aria-label="Nivel de corrección de errores">
+              {% for v in ['L','M','Q','H'] %}
+              <option value="{{v}}" {% if ecc==v %}selected{% endif %}>
+                {% if v=='L' %}L - 7% recovery
+                {% elif v=='M' %}M - 15% recovery
+                {% elif v=='Q' %}Q - 25% recovery
+                {% elif v=='H' %}H - 30% recovery
+                {% else %}{{v}}
+                {% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Version
+  <span class="tip" tabindex="0" data-tip="Auto: el encoder elige la versión mínima en que el payload cabe con los demás parámetros. v1=21×21 y cada versión suma 4 módulos por lado.">?</span>
+</label>
+            <select name="version">
+              <option value="auto" {% if version=='auto' %}selected{% endif %}>Auto (minimum)</option>
+              {% for v in range(1,41) %}
+                <option value="{{v}}" {% if version|int==v %}selected{% endif %}>v{{v}}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="center">
+            <button class="btn" type="submit" style="width:100%; justify-content:center">
+                Generate QR Code
+            </button>
+          </div>
+        </div>
+
+        <details {% if not qr %}open{% endif %} style="margin-top:10px">
+            <summary>⚙️ Advanced Options</summary>
+          <div style="margin-top:12px" class="row-4">
+            <div>
+              <label>Mode
+  <span class="tip" tabindex="0" data-tip="byte: cualquier texto/UTF-8 (recomendado). alphanumeric/numeric son más compactos pero restringen el alfabeto. kanji usa Shift-JIS.">?</span>
+</label>
+              <select name="mode">
+                {% for v in ['byte','alphanumeric','numeric','kanji'] %}
+                  <option value="{{v}}" {% if mode==v %}selected{% endif %}>
+                    {{ 'Byte (UTF-8)' if v=='byte' else v }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label>Encoding
+  <span class="tip" tabindex="0" data-tip="Charset usado en mode=byte. Ej: utf-8, iso-8859-1. Con ECI=True se declara explícitamente; con ECI=False se asume ISO-8859-1.">?</span>
+</label>
+              <input type="text" name="encoding" value="{{encoding|e}}" />
+              <div class="hint">Ej: utf-8, iso-8859-1</div>
+            </div>
+
+            <div>
+              <label>ECI
+  <span class="tip" tabindex="0" data-tip="Extended Channel Interpretation. True: añade encabezado con el encoding (p.ej. UTF-8). False: implícitamente ISO-8859-1.">?</span>
+</label>
+              <select name="eci">
+                <option value="true"  {% if eci %}selected{% endif %}>True (UTF-8)</option>
+                <option value="false" {% if not eci %}selected{% endif %}>False</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Mask Pattern
+  <span class="tip" tabindex="0" data-tip="Patrón 0..7 que alterna módulos para mejorar legibilidad. Auto: se calcula la menor penalización visual según ISO/IEC.">?</span>
+</label>
+              <select name="mask">
+                <option value="auto" {% if mask=='auto' %}selected{% endif %}>auto</option>
+                {% for m in range(8) %}
+                  <option value="{{m}}" {% if mask|int==m %}selected{% endif %}>{{m}}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label>Boost Error
+  <span class="tip" tabindex="0" data-tip="Si cabe, incrementa el nivel de ECC automáticamente (más robusto, menos capacidad).">?</span>
+</label>
+              <select name="boost_error">
+                <option value="false" {% if not boost_error %}selected{% endif %}>False</option>
+                <option value="true"  {% if boost_error %}selected{% endif %}>True</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Micro QR
+  <span class="tip" tabindex="0" data-tip="Formato Micro (M1..M4), más chico y con menos capacidad. En la mayoría de casos usa QR estándar (False).">?</span>
+</label>
+              <select name="micro">
+                <option value="false" {% if not micro %}selected{% endif %}>False</option>
+                <option value="true"  {% if micro %}selected{% endif %}>True</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Quiet Zone
+  <span class="tip" tabindex="0" data-tip="Borde claro (en módulos). ISO recomienda ≥ 4.">?</span>
+</label>
+              <input type="number" name="border" min="0" max="20" step="1" value="{{border}}" />
+            </div>
+          </div>
+        </details>
+      </form>
+
+      <section class="card">
+  <h3>QR Code Structure</h3>
+  <div class="legend-list">
+    <div class="muted"><span class="sw" style="background:rgb(128,0,128)"></span> Finder patterns (3 corners)</div>
+    <div class="muted"><span class="sw" style="background:rgb(230,230,230)"></span> Separator (visual)</div>
+    <div class="muted"><span class="sw" style="background:rgb(255,165,0)"></span> Timing patterns (row 6, column 6)</div>
+    <div class="muted"><span class="sw" style="background:rgb(0,128,128)"></span> Alignment patterns</div>
+    <div class="muted"><span class="sw" style="background:rgb(255,0,0)"></span> Format bits</div>
+    <div class="muted"><span class="sw" style="background:rgb(180,0,0)"></span> Version bits (v ≥ 7)</div>
+    <!-- NUEVO: separar datos y ECC -->
+    <div class="muted"><span class="sw" style="background:rgb(35,35,35)"></span> Data (payload)</div>
+    <div class="muted"><span class="sw" style="background:rgb(20,90,160)"></span> ECC (Reed–Solomon)</div>
+  </div>
+  <div class="hint" style="margin-top:8px">
+    Nota: si el nivel/versión no está en la tabla de ECC actual, el render colorea toda el área no-funcional como “Data” para evitar confusión.
+  </div>
+</section>
+<section class="card">
+  <details>
+    <summary>📘 Documentación de parámetros</summary>
+    <div class="hint" style="margin:10px 0 6px">Resumen de valores, rangos y efectos.</div>
+    <ul style="font-size:13px; line-height:1.55; color:var(--ink); margin:0; padding-left:18px">
+      <li><strong>ECC</strong>:
+        <ul>
+          <li>L = 7% de recuperación de datos</li>
+          <li>M = 15% (Yape)</li>
+          <li>Q = 25%</li>
+          <li>H = 30% (más robusto, menos capacidad)</li>
+        </ul>
+      </li>
+      <li><strong>Versión</strong>:
+        <ul>
+          <li><code>Auto</code> → versión mínima donde el payload cabe con los demás parámetros</li>
+          <li>1…40 → fija una versión; cada +1 suma 4 módulos por lado (v1=21×21, v40=177×177)</li>
+        </ul>
+      </li>
+      <li><strong>Modo</strong>:
+        <ul>
+          <li><code>byte</code> → cualquier dato binario/UTF-8 (recomendado; usado por Yape)</li>
+          <li><code>alphanumeric</code> → A–Z 0–9 y pocos símbolos (más compacto)</li>
+          <li><code>numeric</code> → solo dígitos (máxima compactación)</li>
+          <li><code>kanji</code> → caracteres Shift-JIS</li>
+        </ul>
+      </li>
+      <li><strong>Encoding</strong>:
+        <ul><li>Charset cuando <code>mode=byte</code> (ej.: utf-8, iso-8859-1)</li></ul>
+      </li>
+      <li><strong>ECI</strong>:
+        <ul>
+          <li><code>True</code> → inserta ECI con el charset (ej.: UTF-8)</li>
+          <li><code>False</code> → receptor asume ISO-8859-1</li>
+        </ul>
+      </li>
+      <li><strong>Mask</strong>:
+        <ul>
+          <li><code>Auto</code> → calcula penalización N1..N4 (ISO/IEC) y elige la menor</li>
+          <li><code>0…7</code> → patrón fijo (Yape: 2)</li>
+        </ul>
+      </li>
+      <li><strong>Boost error</strong>:
+        <ul>
+          <li><code>False</code> → respeta el ECC elegido</li>
+          <li><code>True</code> → si cabe, sube el ECC para mayor robustez</li>
+        </ul>
+      </li>
+      <li><strong>Micro QR</strong>:
+        <ul>
+          <li><code>False</code> → QR estándar (v1–40)</li>
+          <li><code>True</code> → Micro QR (M1..M4), menor capacidad</li>
+        </ul>
+      </li>
+      <li><strong>Quiet zone</strong>:
+        <ul>
+          <li>Borde claro en módulos; recomendado: 4+</li>
+        </ul>
+      </li>
+    </ul>
+  </details>
+</section>
+
+    </section>
+
+    <!-- Columna derecha: preview y descargas -->
+    <section class="stack">
+      <div class="card">
+        <h2>Generated QR Code</h2>
+        <div class="muted">Your QR code will appear here after generation</div>
+
+        {% if error %}
+          <div class="err" style="margin-top:12px">{{error}}</div>
+        {% endif %}
+
+        {% if qr %}
+          <div class="preview-wrap" style="margin-top:14px">
+            <div class="preview-inner">
+              <a href="data:image/png;base64,{{qr.img_b64}}" target="_blank" title="Abrir PNG en nueva pestaña">
+                <img class="qr-img" src="data:image/png;base64,{{qr.img_b64}}" alt="QR v{{qr.version}}" />
+              </a>
+            </div>
+          </div>
+
+          <div class="chips">
+            <span class="chip">v{{qr.version}}</span>
+            <span class="chip">{{qr.size}}×{{qr.size}}</span>
+            <span class="chip">Mask {{qr.mask}}</span>
+            <span class="chip">ECC {{qr.ecc}}</span>
+          </div>
+
+          <div class="metrics">
+            <div class="metric"><b>Dark Modules</b>{{qr.dark_modules}} / {{qr.modules}}</div>
+            <div class="metric"><b>Functional Modules</b>{{qr.functional_modules}}</div>
+            <div class="metric"><b>Data Modules</b>{{qr.data_modules}}</div>
+            <div class="metric" style="background:#e0f7fa; border-color:#0ea5e9;">
+              <b style="color:#0ea5e9;">Best Mask</b>
+              <span style="color:#0ea5e9;">{{qr.best_mask}}</span>
+              <span class="muted">(score: {{qr.best_score}})</span>
+            </div>
+          </div>
+
+          <div style="margin-top:10px">
+            <div class="downloads">
+              {% set qs = ('?text=' ~ text|urlencode ~ '&ecc=' ~ ecc ~ '&version=' ~ version ~ '&mode=' ~ mode ~
+                           '&encoding=' ~ encoding|urlencode ~ '&eci=' ~ ('true' if eci else 'false') ~
+                           '&mask=' ~ mask ~ '&boost_error=' ~ ('true' if boost_error else 'false') ~
+                           '&micro=' ~ ('true' if micro else 'false') ~ '&border=' ~ border) %}
+              <a class="dl" href="{{ url_for('export_png_bw') ~ qs }}" title="Descargar PNG (B/N)">
+                <!-- icon -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                PNG
+              </a>
+              <a class="dl" href="{{ url_for('export_svg_separate') ~ qs }}" title="Descargar SVG (módulos separados)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="6" height="6" stroke="currentColor" stroke-width="1.6"/><rect x="15" y="3" width="6" height="6" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="15" width="6" height="6" stroke="currentColor" stroke-width="1.6"/></svg>
+                SVG
+              </a>
+              <a class="dl" href="{{ url_for('export_jpg_bw') ~ qs }}" title="Descargar JPG (alta)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="2" stroke="currentColor" stroke-width="1.6"/><path d="M4 16l4-4 4 4 4-3 4 3" stroke="currentColor" stroke-width="1.6"/></svg>
+                JPG
+              </a>
+              <a class="dl" href="{{ url_for('export_svg_colored') ~ qs }}" title="Descargar SVG (coloreado por zonas)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="3" width="6" height="6" fill="#800080" stroke="currentColor" stroke-width="0.6"/>
+                  <rect x="15" y="3" width="6" height="6" fill="#00A0A0" stroke="currentColor" stroke-width="0.6"/>
+                  <rect x="3" y="15" width="6" height="6" fill="#FFA500" stroke="currentColor" stroke-width="0.6"/>
+                </svg>
+                SVG (colored)
+              </a>
+            </div>
+            <div class="hint" style="margin-top:6px">Los archivos usan exactamente los parámetros actuales (versión, ECC, máscara, quiet zone, etc.).</div>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>
