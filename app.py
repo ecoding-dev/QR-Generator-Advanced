@@ -1,12 +1,47 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+QR Generator Advanced - Flask Web Application
 
+A comprehensive QR code generator with advanced configuration options.
+Originally developed for Yape QR regeneration, now evolved into a general-purpose
+QR code generation tool with detailed analysis and visualization capabilities.
+
+Features:
+    - Advanced QR code generation with all standard parameters
+    - Visual analysis with zone-based coloring
+    - Multiple export formats (PNG, JPG, SVG)
+    - Mask pattern optimization
+    - Real-time parameter adjustment
+
+Author: QR Generator Advanced Team
+License: MIT
+"""
+
+import logging
 from flask import Flask, render_template, request, send_file
 from io import BytesIO
-from qr_core import make_qr, evaluate_all_masks
-from render import render_colored_png_from_matrix, render_colored_svg_from_matrix
+from typing import Tuple, Dict, Any, Optional
+from core.qr_generator import make_qr, evaluate_all_masks
+from core.renderer import render_colored_png_from_matrix, render_colored_svg_from_matrix
 
-def _read_params(req):
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def _read_params(req) -> Tuple[str, str, str, str, str, bool, str, bool, bool, int]:
+    """
+    Extract and validate QR generation parameters from Flask request.
+    
+    Args:
+        req: Flask request object (GET or POST)
+        
+    Returns:
+        Tuple containing: (text, ecc, version, mode, encoding, eci, mask, boost_error, micro, border)
+        
+    Note:
+        Defaults are optimized for Yape QR generation (ECC=M, mask=2, mode=byte)
+    """
     text = (req.values.get('text') or "").strip()
     ecc = (req.values.get('ecc') or "M").strip().upper()
     version = req.values.get('version') or "auto"
@@ -16,7 +51,15 @@ def _read_params(req):
     mask = req.values.get('mask') or "2"
     boost_error = (req.values.get('boost_error') == 'true') if req.values.get('boost_error') is not None else False
     micro = (req.values.get('micro') == 'true') if req.values.get('micro') is not None else False
-    border = int(req.values.get('border') or 4)
+    
+    # Validate border parameter with error handling
+    try:
+        border = int(req.values.get('border') or 4)
+        if border < 0 or border > 20:
+            border = 4  # Reset to safe default
+    except (ValueError, TypeError):
+        border = 4  # Default quiet zone size
+        
     return text, ecc, version, mode, encoding, eci, mask, boost_error, micro, border
 
 def _svg_from_matrix_rects(matrix, border=4, scale=10, light="#ffffff", dark="#000000"):
@@ -85,13 +128,16 @@ def index():
             error = "Debes ingresar el texto raw que quieres codificar."
         else:
             try:
+                logger.info(f"Generating QR code with parameters: ecc={ecc}, version={version}, mode={mode}, mask={mask}")
                 qr_symbol = make_qr(
                     text=text, ecc=ecc, version=version, mode=mode,
                     encoding=encoding, eci=eci, mask=mask,
                     boost_error=boost_error, micro=micro
                 )
+                logger.info(f"Successfully generated QR code version {qr_symbol.version}")
             except Exception as ex:
                 error = f"No se pudo generar el QR con los parámetros elegidos: {ex}"
+                logger.error(f"QR generation failed: {ex}")
                 qr_symbol = None
 
             if qr_symbol:
@@ -100,16 +146,19 @@ def index():
                     matrix, qr_symbol.version, border=border, scale=6, ecc=ecc
                 )
 
-                # Sugerencia de máscara (ISO/IEC)
+                # Evaluate all mask patterns for optimization suggestion
                 try:
+                    logger.info("Evaluating all mask patterns for optimization")
                     best_mask, best_score, scores = evaluate_all_masks(
                         text=text, ecc=ecc,
-                        version=qr_symbol.version,  # fijamos la versión concreta
+                        version=qr_symbol.version,  # Use the actual generated version
                         mode=mode, encoding=encoding, eci=eci,
                         boost_error=boost_error, micro=micro
                     )
                     scores_text = ", ".join(f"{k}:{v}" for k, v in sorted(scores.items()))
-                except Exception:
+                    logger.info(f"Best mask: {best_mask} (score: {best_score})")
+                except Exception as ex:
+                    logger.warning(f"Mask evaluation failed: {ex}")
                     best_mask, best_score, scores_text = "-", "-", "no disponible"
 
                 qr_view = {
