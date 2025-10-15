@@ -1,211 +1,211 @@
 # QR Generator Advanced
 
-Un generador de códigos QR integral con opciones de configuración avanzadas y capacidades de análisis detallado. Originalmente desarrollado para la regeneración de QRs de Yape, esta herramienta ha evolucionado hasta convertirse en una plataforma de generación de códigos QR de propósito general con características de nivel profesional.
+A comprehensive QR code generator with advanced configuration options and detailed analysis capabilities. Originally developed for Yape QR regeneration, this tool has evolved into a general-purpose QR code generation platform with professional-grade features.
 
 ![QR Generator Advanced](https://img.shields.io/badge/QR-Generator%20Advanced-blue?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.8+-green?style=flat-square)
 ![Flask](https://img.shields.io/badge/Flask-3.0+-red?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-## 🚀 Características
+## 🚀 Features
 
-### Funcionalidad Principal
-- **Generación Avanzada de QR**: Control completo sobre todos los parámetros del código QR
-- **Análisis Visual**: Coloreado por zonas para entender la estructura del QR
-- **Múltiples Formatos de Exportación**: PNG, JPG, SVG (tanto monocromo como coloreado)
-- **Optimización de Máscaras**: Selección automática de patrones de máscara óptimos
-- **Vista Previa en Tiempo Real**: Generación instantánea con ajuste de parámetros
+### Core Functionality
+- **Advanced QR Generation**: Full control over all QR code parameters
+- **Visual Analysis**: Zone-based coloring to understand QR structure
+- **Multiple Export Formats**: PNG, JPG, SVG (both monochrome and colored)
+- **Mask Optimization**: Automatic selection of optimal mask patterns
+- **Real-time Preview**: Instant generation with parameter adjustment
 
-### Capacidades Técnicas
-- **Niveles de Corrección de Errores**: L (7%), M (15%), Q (25%), H (30%)
-- **Modos de Codificación**: Byte, Alfanumérico, Numérico, Kanji
-- **Control de Versión**: Auto-selección o especificación manual de versión (1-40)
-- **Codificación de Caracteres**: UTF-8, ISO-8859-1, y codificaciones personalizadas
-- **Soporte ECI**: Interpretación Extendida de Canal para declaración adecuada de codificación
+### Technical Capabilities
+- **Error Correction Levels**: L (7%), M (15%), Q (25%), H (30%)
+- **Encoding Modes**: Byte, Alphanumeric, Numeric, Kanji
+- **Version Control**: Auto-selection or manual version specification (1-40)
+- **Character Encoding**: UTF-8, ISO-8859-1, and custom encodings
+- **ECI Support**: Extended Channel Interpretation for proper encoding declaration
 
-### Características de Análisis
-- **Visualización por Zonas**: Áreas funcionales codificadas por colores (finder, timing, alignment, format, version)
-- **Separación Datos vs ECC**: Distinguir entre datos de carga útil y corrección de errores
-- **Evaluación de Máscaras**: Puntuación de penalización conforme a ISO/IEC 18004
-- **Visualización de Métricas**: Conteos de módulos, ratios y sugerencias de optimización
+### Analysis Features
+- **Zone Visualization**: Color-coded functional areas (finder, timing, alignment, format, version)
+- **Data vs ECC Separation**: Distinguish between payload and error correction data
+- **Mask Evaluation**: ISO/IEC 18004 compliant penalty scoring
+- **Metrics Display**: Module counts, ratios, and optimization suggestions
 
-## 📋 Requisitos
+## 📋 Requirements
 
-- Python 3.8 o superior
+- Python 3.8 or higher
 - Flask 3.0+
 - Segno 1.6+
 - Pillow 10.0+
 
-## 🛠️ Instalación
+## 🛠️ Installation
 
-1. **Clonar el repositorio**
+1. **Clone the repository**
    ```bash
    git clone https://github.com/ecoding-dev/QR-Generator-Advanced.git
    cd qr-generator-advanced
    ```
 
-2. **Crear entorno virtual**
+2. **Create virtual environment**
    ```bash
    python -m venv venv
-   source venv/bin/activate  # En Windows: venv\Scripts\activate
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Instalar dependencias**
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Ejecutar la aplicación**
+4. **Run the application**
    ```bash
    python app.py
    ```
 
-5. **Abrir tu navegador**
-   Navega a `http://localhost:5000`
+5. **Open your browser**
+   Navigate to `http://localhost:5000`
 
-## 🎯 Uso
+## 🎯 Usage
 
-### Interfaz Web
+### Web Interface
 
-La interfaz web proporciona una forma intuitiva de generar códigos QR:
+The web interface provides an intuitive way to generate QR codes:
 
-1. **Ingresa tus datos** en el campo de texto (URL, texto, o payload EMVCo)
-2. **Configura los parámetros**:
-   - Nivel de Corrección de Errores (recomendado: M para Yape)
-   - Versión (Auto para tamaño óptimo)
-   - Modo de Codificación (Byte para máxima compatibilidad)
-3. **Opciones avanzadas**:
-   - Codificación de caracteres
-   - Configuraciones ECI
-   - Patrón de máscara (Auto para optimización)
-   - Tamaño de zona silenciosa
-4. **Genera y analiza** tu código QR
-5. **Exporta** en tu formato preferido
+1. **Enter your data** in the text field (URL, text, or EMVCo payload)
+2. **Configure parameters**:
+   - Error Correction Level (recommended: M for Yape)
+   - Version (Auto for optimal size)
+   - Encoding Mode (Byte for maximum compatibility)
+3. **Advanced options**:
+   - Character encoding
+   - ECI settings
+   - Mask pattern (Auto for optimization)
+   - Quiet zone size
+4. **Generate and analyze** your QR code
+5. **Export** in your preferred format
 
-### Ejemplo: Generación de QR de Yape
+### Example: Yape QR Generation
 
 ```python
 from core.qr_generator import make_qr
 
-# Generar código QR estilo Yape
+# Generate Yape-style QR code
 yape_payload = "00020101021243650016COM.MERCADOLIVRE02008..."
 qr = make_qr(
     text=yape_payload,
-    ecc='M',           # 15% de corrección de errores
-    mask=2,            # Yape usa patrón de máscara 2
-    mode='byte',       # Modo byte para EMVCo
+    ecc='M',           # 15% error correction
+    mask=2,            # Yape uses mask pattern 2
+    mode='byte',       # Byte mode for EMVCo
     encoding='utf-8',
     eci=True
 )
 
-# Guardar como PNG
+# Save as PNG
 qr.save('yape_qr.png', scale=10, border=4)
 ```
 
-### Uso Programático
+### Programmatic Usage
 
 ```python
 from core.qr_generator import make_qr, evaluate_all_masks
 from core.renderer import render_colored_png_from_matrix
 
-# Generar código QR
+# Generate QR code
 qr = make_qr("https://example.com", ecc='M', version='auto', mask='auto')
 
-# Analizar patrones de máscara
+# Analyze mask patterns
 best_mask, best_score, all_scores = evaluate_all_masks(
     "https://example.com", ecc='M', version=qr.version,
     mode='byte', encoding='utf-8', eci=True, boost_error=False, micro=False
 )
 
-# Crear visualización coloreada
+# Create colored visualization
 matrix = list(qr.matrix)
 b64_image, metrics = render_colored_png_from_matrix(
     matrix, qr.version, border=4, scale=6, ecc='M'
 )
 ```
 
-## 📊 Estructura del Código QR
+## 📊 QR Code Structure
 
-La aplicación proporciona visualización detallada de los componentes del código QR:
+The application provides detailed visualization of QR code components:
 
-- **🟣 Patrones Finder**: Tres patrones de esquina para orientación
-- **🟠 Patrones de Timing**: Patrón alternante para detección de tamaño de módulo
-- **🔵 Patrones de Alineación**: Patrones de corrección para distorsión de perspectiva
-- **🔴 Información de Formato**: Nivel de corrección de errores y patrón de máscara
-- **⚫ Módulos de Datos**: Tu carga útil real
-- **🔵 Módulos ECC**: Códigos de corrección de errores
+- **🟣 Finder Patterns**: Three corner patterns for orientation
+- **🟠 Timing Patterns**: Alternating pattern for module size detection
+- **🔵 Alignment Patterns**: Correction patterns for perspective distortion
+- **🔴 Format Information**: Error correction level and mask pattern
+- **⚫ Data Modules**: Your actual payload
+- **🔵 ECC Modules**: Error correction codes
 
-## 🔧 Configuración
+## 🔧 Configuration
 
-### Variables de Entorno
+### Environment Variables
 
-- `FLASK_ENV`: Establecer a `development` para modo debug
-- `FLASK_DEBUG`: Habilitar/deshabilitar modo debug
-- `PORT`: Puerto del servidor (por defecto: 5000)
+- `FLASK_ENV`: Set to `development` for debug mode
+- `FLASK_DEBUG`: Enable/disable debug mode
+- `PORT`: Server port (default: 5000)
 
-### Personalización
+### Customization
 
-La aplicación puede ser personalizada modificando:
+The application can be customized by modifying:
 
-- `core/qr_generator.py`: Lógica de generación de QR
-- `core/renderer.py`: Visualización y coloreado
-- `templates/index.html`: Interfaz web
-- `app.py`: Rutas de Flask y configuración
+- `core/qr_generator.py`: QR generation logic
+- `core/renderer.py`: Visualization and coloring
+- `templates/index.html`: Web interface
+- `app.py`: Flask routes and configuration
 
-## 📚 Documentación
+## 📚 Documentation
 
-- **[THEORY.es.md](THEORY.es.md)**: Teoría integral de códigos QR y especificaciones
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Arquitectura del código y patrones de diseño
-- **[README.md](README.en.md)**: Documentación en inglés
+- **[THEORY.md](THEORY.md)**: Comprehensive QR code theory and specifications
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Code architecture and design patterns
+- **[README.es.md](README.es.md)**: Spanish documentation
 
-## 🤝 Contribuir
+## 🤝 Contributing
 
-¡Aceptamos contribuciones! Por favor consulta nuestras [Guías de Contribución](CONTRIBUTING.md) para más detalles.
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-### Configuración de Desarrollo
+### Development Setup
 
-1. Hacer fork del repositorio
-2. Crear una rama de característica: `git checkout -b feature/amazing-feature`
-3. Hacer tus cambios
-4. Agregar pruebas si es aplicable
-5. Confirmar tus cambios: `git commit -m 'Add amazing feature'`
-6. Hacer push a la rama: `git push origin feature/amazing-feature`
-7. Abrir un Pull Request
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Add tests if applicable
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
-### Estilo de Código
+### Code Style
 
-- Seguir PEP 8 para código Python
-- Usar type hints donde sea apropiado
-- Agregar docstrings para todas las funciones
-- Incluir ejemplos en la documentación
+- Follow PEP 8 for Python code
+- Use type hints where appropriate
+- Add docstrings for all functions
+- Include examples in documentation
 
-## 📄 Licencia
+## 📄 License
 
-Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Agradecimientos
+## 🙏 Acknowledgments
 
-- **Librería Segno**: Por la generación robusta de códigos QR
-- **Framework Flask**: Por la interfaz web
-- **ISO/IEC 18004**: Por las especificaciones de códigos QR
-- **Yape**: Por inspirar el caso de uso original
+- **Segno Library**: For robust QR code generation
+- **Flask Framework**: For the web interface
+- **ISO/IEC 18004**: For QR code specifications
+- **Yape**: For inspiring the original use case
 
-## 📞 Soporte
+## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/ecoding-dev/QR-Generator-Advanced/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ecoding-dev/QR-Generator-Advanced/discussions)
 - **Email**: support@qr-generator-advanced.com
 
-## 🗺️ Hoja de Ruta
+## 🗺️ Roadmap
 
-- [ ] Interfaz CLI para procesamiento por lotes
-- [ ] Endpoints API para acceso programático
-- [ ] Formatos de exportación adicionales (PDF, EPS)
-- [ ] Generación de códigos QR por lotes
-- [ ] Escaneo y análisis de códigos QR
-- [ ] Esquemas de colores personalizados
-- [ ] Soporte para incrustación de logos
+- [ ] CLI interface for batch processing
+- [ ] API endpoints for programmatic access
+- [ ] Additional export formats (PDF, EPS)
+- [ ] Batch QR code generation
+- [ ] QR code scanning and analysis
+- [ ] Custom color schemes
+- [ ] Logo embedding support
 
 ---
 
-**Hecho con ❤️ para la comunidad de códigos QR**
+**Made with ❤️ for the QR code community**
