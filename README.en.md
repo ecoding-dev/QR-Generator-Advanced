@@ -40,7 +40,7 @@ A comprehensive QR code generator with advanced configuration options and detail
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/qr-generator-advanced.git
+   git clone https://github.com/ecoding-dev/eQR-Generator.git
    cd qr-generator-advanced
    ```
 
@@ -192,8 +192,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/qr-generator-advanced/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/qr-generator-advanced/discussions)
+- **Issues**: [GitHub Issues](https://github.com/ecoding-dev/eQR-Generator/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ecoding-dev/eQR-Generator/discussions)
 - **Email**: support@qr-generator-advanced.com
 
 ## 🗺️ Roadmap
