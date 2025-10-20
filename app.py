@@ -2,46 +2,22 @@
 # -*- coding: utf-8 -*-
 """
 QR Generator Advanced - Flask Web Application
-
-A comprehensive QR code generator with advanced configuration options.
-Originally developed for Yape QR regeneration, now evolved into a general-purpose
-QR code generation tool with detailed analysis and visualization capabilities.
-
-Features:
-    - Advanced QR code generation with all standard parameters
-    - Visual analysis with zone-based coloring
-    - Multiple export formats (PNG, JPG, SVG)
-    - Mask pattern optimization
-    - Real-time parameter adjustment
-
-Author: QR Generator Advanced Team
-License: MIT
 """
 
 import logging
 from flask import Flask, render_template, request, send_file
 from io import BytesIO
-from typing import Tuple, Dict, Any, Optional
+from typing import Tuple
 from core.qr_generator import make_qr, evaluate_all_masks
 from core.renderer import render_colored_png_from_matrix, render_colored_svg_from_matrix
+import base64
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def _read_params(req) -> Tuple[str, str, str, str, str, bool, str, bool, bool, int]:
-    """
-    Extract and validate QR generation parameters from Flask request.
-    
-    Args:
-        req: Flask request object (GET or POST)
-        
-    Returns:
-        Tuple containing: (text, ecc, version, mode, encoding, eci, mask, boost_error, micro, border)
-        
-    Note:
-        Defaults are optimized for Yape QR generation (ECC=M, mask=2, mode=byte)
-    """
+    """Extract and validate QR generation parameters from Flask request."""
     text = (req.values.get('text') or "").strip()
     ecc = (req.values.get('ecc') or "M").strip().upper()
     version = req.values.get('version') or "auto"
@@ -52,41 +28,96 @@ def _read_params(req) -> Tuple[str, str, str, str, str, bool, str, bool, bool, i
     boost_error = (req.values.get('boost_error') == 'true') if req.values.get('boost_error') is not None else False
     micro = (req.values.get('micro') == 'true') if req.values.get('micro') is not None else False
     
-    # Validate border parameter with error handling
     try:
         border = int(req.values.get('border') or 4)
         if border < 0 or border > 20:
-            border = 4  # Reset to safe default
+            border = 4
     except (ValueError, TypeError):
-        border = 4  # Default quiet zone size
+        border = 4
         
     return text, ecc, version, mode, encoding, eci, mask, boost_error, micro, border
 
-def _svg_from_matrix_rects(matrix, border=4, scale=10, light="#ffffff", dark="#000000"):
-    """
-    Genera un SVG donde cada módulo oscuro es un <rect> independiente.
-    Incluye quiet zone = border (en módulos).
-    """
+# Variable global para guardar el logo actual
+_current_logo_image = None
+
+def _svg_from_matrix_rects(matrix, logo_image=None, border=4, scale=10, light="#ffffff", dark="#000000"):
+    """Genera un SVG del QR donde los módulos que colisionen con el logo se omiten."""
+    from PIL import Image, ImageDraw
+    import numpy as np
+    import base64
+    from io import BytesIO
+    
+    # Si no hay logo, usar triángulo
+    if logo_image is None:
+        logo_size_px = 400
+        img_logo = Image.new("RGBA", (logo_size_px, logo_size_px), (255, 255, 255, 0))
+        draw = ImageDraw.Draw(img_logo)
+        pts = [(logo_size_px//2, 20), (logo_size_px-20, logo_size_px-20), (20, logo_size_px-20)]
+        draw.polygon(pts, fill=(0, 0, 0, 255))
+    else:
+        img_logo = logo_image.convert("RGBA")
+        logo_size_px = max(img_logo.size)
+    
+    logo_array = np.array(img_logo)
+    alpha = logo_array[:, :, 3]
+    mask_array = alpha > 128  # Cambié de 200 a 128 para detectar mejor la transparencia
+
     rows = list(matrix)
     n = len(rows)
     size_mod = n + 2 * border
     px = size_mod * scale
+    cx = (n / 2 + border) * scale
+    cy = (n / 2 + border) * scale
 
-    # header
+    logo_size = n * scale * 0.3
+    mask_scale = logo_size / logo_size_px
+    mask_width = int(logo_size_px * mask_scale)
+    mask_height = int(logo_size_px * mask_scale)
+    mask_array = np.array(
+        Image.fromarray(mask_array.astype(np.uint8) * 255)
+        .resize((mask_width, mask_height), Image.LANCZOS)
+    ) > 128
+
+    mask_offset_x = int(cx - mask_width / 2)
+    mask_offset_y = int(cy - mask_height / 2)
+
     out = []
     out.append('<?xml version="1.0" encoding="UTF-8"?>')
     out.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{px}" height="{px}" viewBox="0 0 {px} {px}">')
-    # fondo (quiet zone + blancos)
     out.append(f'<rect width="{px}" height="{px}" fill="{light}"/>')
 
-    # dibuja cada módulo oscuro como rect
     for r in range(n):
         for c in range(n):
-            if rows[r][c]:
-                x = (c + border) * scale
-                y = (r + border) * scale
-                out.append(f'<rect x="{x}" y="{y}" width="{scale}" height="{scale}" fill="{dark}"/>')
+            if not rows[r][c]:
+                continue
 
+            x = (c + border) * scale
+            y = (r + border) * scale
+
+            collision = False
+            for px_iter in range(int(x), int(x + scale)):
+                for py_iter in range(int(y), int(y + scale)):
+                    mx = px_iter - mask_offset_x
+                    my = py_iter - mask_offset_y
+                    if (0 <= mx < mask_width and 0 <= my < mask_height and mask_array[my, mx]):
+                        collision = True
+                        break
+                if collision:
+                    break
+            
+            if collision:
+                continue
+
+            out.append(f'<rect x="{int(x)}" y="{int(y)}" width="{scale}" height="{scale}" fill="{dark}"/>')
+
+    # Dibujar solo la imagen original sin procesarla
+    img_resized = logo_image.convert("RGBA").resize((mask_width, mask_height), Image.LANCZOS)
+    buffer = BytesIO()
+    img_resized.save(buffer, format='PNG')
+    buffer.seek(0)
+    base64_str = base64.b64encode(buffer.getvalue()).decode()
+    
+    out.append(f'<image x="{mask_offset_x}" y="{mask_offset_y}" width="{mask_width}" height="{mask_height}" href="data:image/png;base64,{base64_str}"/>')
     out.append('</svg>')
     return "\n".join(out).encode("utf-8")
 
@@ -94,7 +125,9 @@ app = Flask(__name__, template_folder='templates')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # Defaults = receta Yape
+    global _current_logo_image
+    from PIL import Image
+    
     text = ""
     ecc = "M"
     version = "auto"
@@ -108,6 +141,7 @@ def index():
 
     qr_view = None
     error = None
+    logo_image = None
 
     if request.method == 'POST':
         text = (request.form.get('text') or "").strip()
@@ -123,6 +157,18 @@ def index():
             border = int(request.form.get('border') or 4)
         except Exception:
             border = 4
+
+        # Leer archivo logo si se subió
+        if 'logo' in request.files and request.files['logo'].filename:
+            try:
+                file = request.files['logo']
+                logo_image = Image.open(file.stream)
+                _current_logo_image = logo_image
+                logger.info(f"Logo uploaded: {file.filename} ({logo_image.size})")
+            except Exception as ex:
+                logger.warning(f"No se pudo cargar el logo: {ex}")
+                logo_image = None
+                _current_logo_image = None
 
         if not text:
             error = "Debes ingresar el texto raw que quieres codificar."
@@ -142,16 +188,32 @@ def index():
 
             if qr_symbol:
                 matrix = list(qr_symbol.matrix)
-                b64, metrics = render_colored_png_from_matrix(
-                    matrix, qr_symbol.version, border=border, scale=6, ecc=ecc
-                )
+                
+                # Si hay logo, generar SVG para preview; si no, generar PNG
+                qr_view_is_svg = False
+                if logo_image:
+                    svg_bytes = _svg_from_matrix_rects(matrix, logo_image=logo_image, border=border, scale=10,
+                                                       light="#ffffff", dark="#000000")
+                    b64 = base64.b64encode(svg_bytes).decode()
+                    qr_view_is_svg = True
+                    metrics = {
+                        'size': len(matrix),
+                        'modules': len(matrix) ** 2,
+                        'dark_modules': sum(sum(row) for row in matrix),
+                        'functional_modules': 0,
+                        'data_modules_est': 0,
+                        'border': border
+                    }
+                else:
+                    b64, metrics = render_colored_png_from_matrix(
+                        matrix, qr_symbol.version, border=border, scale=6, ecc=ecc
+                    )
 
-                # Evaluate all mask patterns for optimization suggestion
                 try:
                     logger.info("Evaluating all mask patterns for optimization")
                     best_mask, best_score, scores = evaluate_all_masks(
                         text=text, ecc=ecc,
-                        version=qr_symbol.version,  # Use the actual generated version
+                        version=qr_symbol.version,
                         mode=mode, encoding=encoding, eci=eci,
                         boost_error=boost_error, micro=micro
                     )
@@ -165,6 +227,7 @@ def index():
                     'version': qr_symbol.version,
                     'size': metrics['size'],
                     'img_b64': b64,
+                    'img_is_svg': qr_view_is_svg,
                     'ecc': ecc,
                     'mask': getattr(qr_symbol, 'mask', None if mask == 'auto' else int(mask)),
                     'modules': metrics['modules'],
@@ -179,7 +242,8 @@ def index():
                     'micro': micro,
                     'best_mask': best_mask,
                     'best_score': best_score,
-                    'mask_scores_text': scores_text
+                    'mask_scores_text': scores_text,
+                    'logo_image': logo_image
                 }
 
     return render_template(
@@ -197,7 +261,6 @@ def export_png_bw():
     qr = make_qr(text, ecc=ecc, version=version, mode=mode, encoding=encoding,
                  eci=eci, mask=mask, boost_error=boost_error, micro=micro)
     buf = BytesIO()
-    # PNG monocromo; usa quiet zone = border
     qr.save(buf, kind='png', scale=10, border=border, light='white', dark='black')
     buf.seek(0)
     return send_file(buf, as_attachment=True, download_name='qr_bw.png', mimetype='image/png')
@@ -209,7 +272,6 @@ def export_jpg_bw():
         return "Falta texto", 400
     qr = make_qr(text, ecc=ecc, version=version, mode=mode, encoding=encoding,
                  eci=eci, mask=mask, boost_error=boost_error, micro=micro)
-    # Primero generamos PNG en memoria para conservar nitidez, luego convertimos a JPG
     png_buf = BytesIO()
     qr.save(png_buf, kind='png', scale=12, border=border, light='white', dark='black')
     png_buf.seek(0)
@@ -223,13 +285,15 @@ def export_jpg_bw():
 
 @app.route('/export/svg', methods=['GET'])
 def export_svg_separate():
+    global _current_logo_image
+    
     text, ecc, version, mode, encoding, eci, mask, boost_error, micro, border = _read_params(request)
     if not text:
         return "Falta texto", 400
     qr = make_qr(text, ecc=ecc, version=version, mode=mode, encoding=encoding,
                  eci=eci, mask=mask, boost_error=boost_error, micro=micro)
 
-    svg_bytes = _svg_from_matrix_rects(qr.matrix, border=border, scale=10,
+    svg_bytes = _svg_from_matrix_rects(qr.matrix, logo_image=_current_logo_image, border=border, scale=10,
                                        light="#ffffff", dark="#000000")
     buf = BytesIO(svg_bytes)
     return send_file(buf, as_attachment=True,

@@ -199,7 +199,8 @@
   <main class="container">
     <!-- Columna izquierda: formulario -->
     <section class="stack">
-      <form method="post" class="card">
+     <form method="post" class="card" enctype="multipart/form-data">
+
         <div class="block-title">⚡ Quick Generate</div>
         <div class="row">
           <div>
@@ -238,13 +239,32 @@
               {% endfor %}
             </select>
           </div>
+          
           <div class="center">
             <button class="btn" type="submit" style="width:100%; justify-content:center">
                 Generate QR Code
             </button>
           </div>
         </div>
+  
+        
+<div class="row">
+  <div>
+    <label>Logo (PNG/SVG - Opcional)
+      <span class="tip" tabindex="0" data-tip="Imagen sin fondo que se mostrará centrada en el QR. Los módulos que colisionen se ocultarán.">?</span>
+    </label>
+    <input type="file" name="logo" accept="image/png,image/svg+xml" />
+  </div>
+</div>
 
+<div class="row">
+  
+  <div class="center">
+    <button class="btn" type="submit" style="width:100%; justify-content:center">
+        Generate QR Code
+    </button>
+  </div>
+</div>
         <details {% if not qr %}open{% endif %} style="margin-top:10px">
             <summary>⚙️ Advanced Options</summary>
           <div style="margin-top:12px" class="row-4">
@@ -416,9 +436,13 @@
         {% if qr %}
           <div class="preview-wrap" style="margin-top:14px">
             <div class="preview-inner">
-              <a href="data:image/png;base64,{{qr.img_b64}}" target="_blank" title="Abrir PNG en nueva pestaña">
-                <img class="qr-img" src="data:image/png;base64,{{qr.img_b64}}" alt="QR v{{qr.version}}" />
-              </a>
+              {% if qr.img_is_svg %}
+                <img class="qr-img" src="data:image/svg+xml;base64,{{qr.img_b64}}" alt="QR v{{qr.version}}" />
+              {% else %}
+                <a href="data:image/png;base64,{{qr.img_b64}}" target="_blank" title="Abrir PNG en nueva pestaña">
+                  <img class="qr-img" src="data:image/png;base64,{{qr.img_b64}}" alt="QR v{{qr.version}}" />
+                </a>
+              {% endif %}
             </div>
           </div>
 
